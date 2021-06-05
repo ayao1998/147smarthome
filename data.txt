@@ -1,0 +1,7 @@
+Monday:0:1487:5760
+Tuesday:2746:0:7100
+Wednesday:1800:0:5250
+Thursday:2320:1003:6490
+Friday:1092:0:1092
+Saturday:0:0:0
+Sunday:0:0:0

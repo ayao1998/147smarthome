@@ -1,0 +1,234 @@
+<!--CODE BASED OFF OF https://ron.sh/creating-real-time-charts-with-flask/ AS PROVIDED ON PIAZZA-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Energy Data</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="card" style="margin-top: 5%">
+            <div class="card-body" style="height: 22vw">
+              <canvas id="canvas"></canvas>
+            </div>
+            <div class="card-body" style="height: 22vw">
+              <canvas id="canvas2"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js"></script>
+    <script>
+      let data = {
+        labels: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+        datasets: [
+          {
+            label: "A/C",
+            backgroundColor: "rgba(54, 162, 235, 1)",
+            data: [],
+          },
+          {
+            label: "Heater",
+            backgroundColor: "rgba(255, 99, 132, 1)",
+            data: [],
+          },
+          {
+            label: "Light",
+            backgroundColor: "rgba(255, 205, 86, 1)",
+            data: [],
+          },
+        ],
+      };
+
+      let data2 = {
+        labels: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+        datasets: [
+          {
+            label: "A/C",
+            backgroundColor: "rgba(54, 162, 235, 0.5)",
+            data: [],
+          },
+          {
+            label: "Heater",
+            backgroundColor: "rgba(255, 99, 132, 0.5)",
+            data: [],
+          },
+          {
+            label: "Light",
+            backgroundColor: "rgba(255, 205, 86, 0.5)",
+            data: [],
+          },
+        ],
+      };
+
+      $(document).ready(function () {
+        const config = {
+          type: "bar",
+          data: data,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            title: {
+              display: true,
+              text: "Appliance Usage",
+            },
+            tooltips: {
+              mode: "index",
+              intersect: false,
+            },
+            hover: {
+              mode: "nearest",
+              intersect: true,
+            },
+            scales: {
+              xAxes: [
+                {
+                  display: true,
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Day",
+                  },
+                },
+              ],
+              yAxes: [
+                {
+                  display: true,
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Time Powered On(hrs)",
+                  },
+                  ticks: {
+                    beginAtZero: true,
+                  },
+                },
+              ],
+            },
+          },
+        };
+
+        const config2 = {
+          type: "bar",
+          data: data2,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            title: {
+              display: true,
+              text: "Energy Consumption",
+            },
+            tooltips: {
+              mode: "index",
+              intersect: false,
+            },
+            hover: {
+              mode: "nearest",
+              intersect: true,
+            },
+            scales: {
+              xAxes: [
+                {
+                  display: true,
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Day",
+                  },
+                },
+              ],
+              yAxes: [
+                {
+                  display: true,
+                  scaleLabel: {
+                    display: true,
+                    labelString: "Energy Used(Kwh)",
+                  },
+                  ticks: {
+                    beginAtZero: true,
+                  },
+                },
+              ],
+            },
+          },
+        };
+
+        const context = document.getElementById("canvas").getContext("2d");
+        const context2 = document.getElementById("canvas2").getContext("2d");
+
+        const barChart = new Chart(context, config);
+        const barChart2 = new Chart(context2, config2);
+
+        const source = new EventSource("/bar-data");
+        const source2 = new EventSource("/bar-data2");
+
+        let counter = 0;
+        source.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          if (counter === 7) {
+            for (num = 0; num < 7; ++num) {
+              config.data.datasets[0].data.shift();
+              config.data.datasets[1].data.shift();
+              config.data.datasets[2].data.shift();
+            }
+            counter = 0;
+          }
+          console.log(data);
+          config.data.datasets[0].data.push(data.datasets[0].data);
+          config.data.datasets[1].data.push(data.datasets[1].data);
+          config.data.datasets[2].data.push(data.datasets[2].data);
+          counter += 1;
+          barChart.update();
+        };
+
+        let counter2 = 0;
+        source2.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          if (counter2 === 7) {
+            for (num = 0; num < 7; ++num) {
+              config2.data.datasets[0].data.shift();
+              config2.data.datasets[1].data.shift();
+              config2.data.datasets[2].data.shift();
+            }
+            counter2 = 0;
+          }
+          config2.data.datasets[0].data.push(data.datasets[0].data);
+          config2.data.datasets[1].data.push(data.datasets[1].data);
+          config2.data.datasets[2].data.push(data.datasets[2].data);
+          counter2 += 1;
+          barChart2.update();
+        };
+      });
+    </script>
+  </body>
+</html>
+
